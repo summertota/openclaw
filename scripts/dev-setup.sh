@@ -145,10 +145,42 @@ else
     mise install node@22
     mise use node@22
   else
-    fail "No version manager (nvm/fnm/mise) found. Please install Node.js >= 22 manually."
-    fail "Visit https://nodejs.org/ or run: curl -fsSL https://fnm.vercel.app/install | bash"
-    record_result "Node.js >= 22" "fail"
-    exit 1
+    # No version manager found — install nvm automatically, then use it
+    # to install the required Node.js version.
+    info "No version manager (nvm/fnm/mise) detected. Installing nvm..."
+
+    if ! command -v curl &>/dev/null && ! command -v wget &>/dev/null; then
+      fail "Neither curl nor wget is available. Cannot download nvm installer."
+      fail "Install curl (e.g. apt-get install -y curl) and re-run this script."
+      record_result "Node.js >= 22" "fail"
+      exit 1
+    fi
+
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    mkdir -p "$NVM_DIR"
+
+    NVM_INSTALL_URL="https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh"
+    if command -v curl &>/dev/null; then
+      curl -o- "$NVM_INSTALL_URL" | bash
+    else
+      wget -qO- "$NVM_INSTALL_URL" | bash
+    fi
+
+    # Source nvm into the current shell so we can use it immediately
+    # shellcheck disable=SC1091
+    if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+      source "$NVM_DIR/nvm.sh"
+    else
+      fail "nvm installation succeeded but $NVM_DIR/nvm.sh not found."
+      record_result "Node.js >= 22" "fail"
+      exit 1
+    fi
+
+    success "nvm installed at $NVM_DIR"
+    info "Installing Node.js 22 via nvm..."
+    nvm install 22
+    nvm use 22
+    nvm alias default 22
   fi
 
   # Re-check after install
