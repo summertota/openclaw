@@ -29,6 +29,45 @@
 
 set -euo pipefail
 
+# ─── Pin locale to en_US.UTF-8 ──────────────────────────────────────────────
+# Ensures deterministic behavior across machines regardless of the developer's
+# native locale.  Affected areas include:
+#   - String sorting / collation (sort, uniq, comm, diff)
+#   - Regex character classes in grep/sed/awk ([[:alpha:]], [[:space:]], …)
+#   - Error messages matched by grep (e.g. "No such file" vs. a translation)
+#   - Date/time formatting in log lines and test assertions
+#   - Number formatting (decimal separator "." vs ",")
+# We generate the locale if it is missing, then export LANG + LC_ALL so every
+# child process (Node, pnpm, vitest, oxlint, curl, …) inherits it.
+# ─────────────────────────────────────────────────────────────────────────────
+
+TARGET_LOCALE="en_US.UTF-8"
+
+ensure_locale() {
+  # Check whether the target locale is already usable
+  if locale -a 2>/dev/null | grep -qi "en_US\.utf-\?8"; then
+    return 0
+  fi
+
+  # Attempt to generate it (requires root on most distros)
+  if command -v locale-gen &>/dev/null; then
+    echo "[INFO]  Generating locale ${TARGET_LOCALE} (may require sudo)..."
+    if [[ $EUID -eq 0 ]]; then
+      locale-gen "$TARGET_LOCALE" >/dev/null 2>&1 || true
+    else
+      sudo locale-gen "$TARGET_LOCALE" >/dev/null 2>&1 || true
+    fi
+  elif command -v localedef &>/dev/null; then
+    localedef -i en_US -f UTF-8 en_US.UTF-8 2>/dev/null || true
+  fi
+}
+
+ensure_locale
+
+export LANG="${TARGET_LOCALE}"
+export LC_ALL="${TARGET_LOCALE}"
+export LANGUAGE="en_US:en"
+
 # ─── Color helpers (safe for non-TTY) ────────────────────────────────────────
 
 if [[ -t 1 ]]; then
