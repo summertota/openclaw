@@ -294,3 +294,14 @@
   - `node --import tsx scripts/release-check.ts`
   - `pnpm release:check`
   - `pnpm test:install:smoke` or `OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke` for non-root smoke path.
+
+## Cursor Cloud specific instructions
+
+- **Node 22+ and pnpm 10.23.0** are required. The VM ships with both pre-installed; the update script runs `pnpm install` to refresh deps.
+- **Standard dev commands** are documented in the "Build, Test, and Development Commands" section above. Key ones: `pnpm check` (lint+format), `pnpm test` (vitest), `pnpm build` (full TS build), `pnpm gateway:dev` (start gateway without channels).
+- **Memory-safe test runs**: use `OPENCLAW_TEST_PROFILE=low OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test` to avoid OOM on resource-constrained VMs.
+- **Gateway dev mode** uses `--dev` flag or `OPENCLAW_PROFILE=dev`, which isolates config under `~/.openclaw-dev/`. The gateway auto-generates an auth token on first run; CLI commands targeting this gateway need the same profile flag.
+- **No external services required**: the gateway is self-contained (SQLite + filesystem). No Docker, database, or Redis needed for core dev.
+- **pnpm `onlyBuiltDependencies`** allowlist is already configured in `package.json`; do not run `pnpm approve-builds` interactively. Warnings about `@discordjs/opus` or `@tloncorp/tlon-skill` ignored builds are harmless.
+- **Control UI**: gateway auto-builds UI assets on first start if missing. Alternatively run `pnpm ui:build` manually. Dev UI server: `pnpm ui:dev`.
+- **Bun is not required** but preferred for TS execution speed. All dev commands work with Node/pnpm alone.
