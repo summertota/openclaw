@@ -264,3 +264,13 @@
   - `node --import tsx scripts/release-check.ts`
   - `pnpm release:check`
   - `pnpm test:install:smoke` or `OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT=1 pnpm test:install:smoke` for non-root smoke path.
+
+## Cursor Cloud specific instructions
+
+- **Node 22+** and **pnpm 10.23.0** are required. The VM comes with nvm; `corepack enable && corepack prepare pnpm@10.23.0 --activate` ensures the right pnpm version.
+- After `pnpm install`, two build scripts (`@discordjs/opus`, `@tloncorp/tlon-skill`) may warn about being ignored. This is non-blocking; they are not in `pnpm.onlyBuiltDependencies` and the project works without them.
+- **Tests**: use `OPENCLAW_TEST_PROFILE=low OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test` to avoid memory pressure on constrained VMs. Full suite (~892 test files, ~7400 tests) takes ~6 min.
+- **Dev gateway**: `pnpm gateway:dev` starts the gateway on port 18789 with channels disabled (`OPENCLAW_SKIP_CHANNELS=1`). Verify with `curl http://127.0.0.1:18789/healthz`.
+- **CLI dev mode**: `pnpm openclaw --dev <command>` uses an isolated dev config at `~/.openclaw-dev/`. Non-dev mode uses `~/.openclaw/`.
+- The `--dev` flag changes the default WS port to 19001, so `pnpm openclaw --dev health` targets `ws://127.0.0.1:19001` by default — not the same as a gateway started with `--port 18789`. Use `pnpm gateway:dev` for a consistent dev experience.
+- All standard commands (`pnpm check`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm format:check`) are documented in `AGENTS.md` § "Build, Test, and Development Commands".
